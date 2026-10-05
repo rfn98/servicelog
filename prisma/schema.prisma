@@ -1,0 +1,63 @@
+// ServiceLog — database schema
+//
+// Datasource URL is NOT declared here: Prisma 7 reads it from prisma.config.ts.
+// Local dev uses SQLite (PLAN.md §10); switching to PostgreSQL later only
+// requires changing the provider below, not the application code.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+/// Maintenance categories, fixed by PLAN.md §6 and §21:
+/// Oil Change, Brake, Chain, Tire, Battery, General Service, Other.
+/// §13 shows the wire format for these values, e.g. "OIL_CHANGE".
+enum ServiceType {
+  OIL_CHANGE
+  BRAKE
+  CHAIN
+  TIRE
+  BATTERY
+  GENERAL_SERVICE
+  OTHER
+}
+
+model Vehicle {
+  id              String   @id @default(cuid())
+  name            String
+  brand           String
+  model           String
+  year            Int
+  currentOdometer Int
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  serviceRecords ServiceRecord[]
+
+  @@map("vehicles")
+}
+
+model ServiceRecord {
+  id         String      @id @default(cuid())
+  vehicleId  String
+  type       ServiceType
+  date       DateTime
+  odometer   Int
+  notes      String
+  receiptUrl String?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  // Serves "return service records sorted newest first" (PLAN.md §13 GET /api/services).
+  @@index([vehicleId, date(sort: Desc)])
+  // Serves type-scoped lookups such as "when did I last change the oil?" (PLAN.md §22).
+  @@index([vehicleId, type])
+
+  @@map("service_records")
+}

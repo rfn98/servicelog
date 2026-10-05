@@ -10,8 +10,9 @@ import { prisma } from "../lib/db";
  * Route-level contract for POST /api/services (PLAN.md §13).
  *
  * Every Prisma method this route touches is stubbed, so these tests never write
- * to dev.db. The recorded calls are what prove the two interesting behaviours:
- * the vehicle is resolved server-side, and the odometer only ever moves forward.
+ * to the database. The recorded calls are what prove the two interesting
+ * behaviours: the vehicle is resolved server-side, and the odometer only ever
+ * moves forward.
  */
 
 const VEHICLE_ID = "vehicle-under-test";

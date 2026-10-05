@@ -9,12 +9,11 @@
  * with `upsert`, so running `npm run db:seed` repeatedly updates the existing
  * rows instead of inserting duplicates. No extra unique constraint is needed.
  *
- * Self-contained on purpose — it builds its own client and resolves the SQLite
- * path the same way lib/db.ts does, so it does not depend on the tsconfig "@/*"
- * alias (which plain `tsx` does not resolve).
+ * Self-contained on purpose — it builds its own client from DATABASE_URL, so it
+ * does not depend on the tsconfig "@/*" alias (which plain `tsx` does not
+ * resolve).
  */
-import path from "node:path";
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../generated/prisma/client";
 
 const DEMO_VEHICLE_ID = "demo_vehicle_yamaha_r15";
@@ -57,17 +56,14 @@ function resolveDatabaseUrl(): string {
   const url = process.env.DATABASE_URL;
   if (!url) {
     throw new Error(
-      "DATABASE_URL is not set. Copy .env.example to .env and set DATABASE_URL.",
+      "DATABASE_URL is not set. Copy .env.example to .env and set DATABASE_URL to your PostgreSQL connection string.",
     );
   }
-  if (!url.startsWith("file:")) {
-    return url;
-  }
-  return `file:${path.resolve(process.cwd(), url.slice("file:".length))}`;
+  return url;
 }
 
 async function main() {
-  const adapter = new PrismaBetterSqlite3({ url: resolveDatabaseUrl() });
+  const adapter = new PrismaPg({ connectionString: resolveDatabaseUrl() });
   const prisma = new PrismaClient({ adapter });
 
   try {

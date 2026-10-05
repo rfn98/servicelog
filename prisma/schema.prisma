@@ -1,8 +1,14 @@
 // ServiceLog — database schema
 //
-// Datasource URL is NOT declared here: Prisma 7 reads it from prisma.config.ts.
-// Local dev uses SQLite (PLAN.md §10); switching to PostgreSQL later only
-// requires changing the provider below, not the application code.
+// Datasource URL is NOT declared here: Prisma 7 reads it from prisma.config.ts,
+// which points the Prisma CLI at DIRECT_URL (a direct PostgreSQL connection) and
+// leaves DATABASE_URL (a pooled connection) for the runtime client in lib/db.ts.
+//
+// Provider history: this schema ran on SQLite (provider = "sqlite") until the
+// deployment migration. The models, enum values, ids, and indexes below were
+// deliberately left untouched across that switch, so only the provider changed.
+// Because the old init migration was SQLite DDL, the migration folder was
+// regenerated as a single PostgreSQL `init` migration rather than layered.
 
 generator client {
   provider = "prisma-client"
@@ -10,7 +16,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
 }
 
 /// Maintenance categories, fixed by PLAN.md §6 and §21:

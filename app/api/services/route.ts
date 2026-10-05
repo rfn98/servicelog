@@ -11,7 +11,7 @@ import { parseServiceRecordBody } from "@/lib/service-validation";
  * Server Component), so an unused endpoint would only widen the surface.
  */
 
-/** better-sqlite3 is a native Node module, so this cannot run on the edge. */
+/** The pg driver is a native Node module, so this cannot run on the edge. */
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 

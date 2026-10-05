@@ -389,11 +389,11 @@ Next.js
 TypeScript
 Tailwind CSS
 Prisma
-SQLite for fastest local development
+PostgreSQL on Neon
 Gemma
 ```
 
-If deployment requires PostgreSQL, switch the database provider to PostgreSQL without changing the application architecture.
+The database provider is PostgreSQL on Neon, shared by local development and production, so there is one schema and one set of credentials rather than a local database plus a hosted one. Getting there was a provider switch only: the application architecture, the Prisma models, and the API contracts are unchanged.
 
 Do not introduce additional infrastructure unless necessary.
 

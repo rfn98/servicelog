@@ -36,7 +36,7 @@ Two endpoints back those screens:
 - `POST /api/services` — validate and store one service record. Returns `201` with the created record.
 - `POST /api/ask` — answer a question grounded in the stored records. Returns the answer, the cited sources, and metadata about the model call.
 
-Everything runs locally against a SQLite database.
+The app stores everything in PostgreSQL on Neon — the same database local development and production use.
 
 ---
 
@@ -80,7 +80,7 @@ The form is a client component. It posts to `POST /api/services`, where the payl
 - `odometer` must be an integer between 1 and 1,000,000.
 - `notes` must be non-empty after trimming, and at most 1000 characters.
 
-Only then is the row inserted into SQLite. The dashboard reads the same database on the server, so a new record shows up on the next render.
+Only then is the row inserted into PostgreSQL. The dashboard reads the same database on the server, so a new record shows up on the next render.
 
 ### Asking a question
 
@@ -184,13 +184,13 @@ Create your environment file:
 cp .env.example .env     # PowerShell: Copy-Item .env.example .env
 ```
 
-Then set `GEMINI_API_KEY` in `.env`. Get one from https://aistudio.google.com/apikey. `DATABASE_URL` already defaults to `file:./dev.db`, and `GEMMA_MODEL` already defaults to `gemma-4-26b-a4b-it`.
+Then set `GEMINI_API_KEY` in `.env`. Get one from https://aistudio.google.com/apikey. Set `DATABASE_URL` to your Neon connection string (Neon console → Connection Details); `DIRECT_URL` is optional and only the Prisma CLI reads it. `GEMMA_MODEL` already defaults to `gemma-4-26b-a4b-it`.
 
 Set up the database and start the app:
 
 ```bash
 npm run db:generate      # regenerate the Prisma client
-npm run db:migrate       # apply migrations, creates dev.db
+npm run db:deploy        # apply migrations to Neon
 npm run db:seed          # demo vehicle + three demo service records
 npm run dev              # http://localhost:3000
 ```
@@ -208,7 +208,8 @@ Available scripts:
 | `npm test` | Full `node:test` suite |
 | `npm run smoke` | Live AI smoke test, needs a real key and spends quota |
 | `npm run db:generate` | Generate the Prisma client |
-| `npm run db:migrate` | Apply migrations |
+| `npm run db:deploy` | Apply pending migrations to Neon (`prisma migrate deploy`) |
+| `npm run db:migrate` | Author a new migration while developing; needs a shadow database, which Neon does not provide by default |
 | `npm run db:seed` | Load demo/fixture data |
 | `npm run db:studio` | Prisma Studio |
 
@@ -216,13 +217,14 @@ Available scripts:
 
 ## 10. Environment Variables
 
-Copy `.env.example` to `.env` and fill in real values. `.env` is gitignored and must never be committed. All three variables are read on the server only.
+Copy `.env.example` to `.env` and fill in real values. `.env` is gitignored and must never be committed. All four variables are read on the server only.
 
 | Variable | Required | Default | Purpose |
 | --- | --- | --- | --- |
 | `GEMINI_API_KEY` | Yes | none | Server-side provider key. Read exclusively in `lib/gemma.ts`. Never prefix it with `NEXT_PUBLIC_`, which would expose it to the browser. |
 | `GEMMA_MODEL` | No | `gemma-4-26b-a4b-it` | Model id override, for trying a different Gemma variant without code changes. |
-| `DATABASE_URL` | No | `file:./dev.db` | SQLite connection string, read by both the Prisma CLI (`prisma.config.ts`) and the runtime (`lib/db.ts`). Path is relative to the project root. |
+| `DATABASE_URL` | Yes | none | Neon's pooled PostgreSQL connection string, read by both the Prisma CLI (`prisma.config.ts`, as its fallback) and the runtime (`lib/db.ts`). Used exactly as provided. |
+| `DIRECT_URL` | No | none | Neon's direct (non-pooled) connection string. The Prisma CLI prefers it for `prisma migrate`; when empty, the CLI uses `DATABASE_URL`. Never set it in Vercel. |
 
 No real values are committed to this repository.
 
@@ -254,7 +256,7 @@ Stated plainly, because they are scope decisions and not bugs.
 
 **Data**
 
-- The database is local SQLite via `dev.db`. There is no hosted database and no deployment configuration in this repository.
+- The database is PostgreSQL on Neon, shared by local development and production. No deployment configuration is committed to this repository.
 - **All seeded records are demo/fixture data.** One demo vehicle and three demo service records, written by `prisma/seed.ts`, which labels itself as demo data. This is not real user history, and no real user data is included.
 - **No testimonial or friend feedback is claimed anywhere.** The demo uses the seed fixture; any real feedback would have to be collected separately and honestly attributed.
 
@@ -297,7 +299,7 @@ From the project plan, and not implemented in this submission:
 | Framework | Next.js 16 (App Router, Turbopack) |
 | UI | React 19, Tailwind CSS 4 |
 | Language | TypeScript 5 |
-| Database | SQLite via Prisma 7 and `@prisma/adapter-better-sqlite3` (`better-sqlite3`) |
+| Database | PostgreSQL on Neon via Prisma 7 and `@prisma/adapter-pg` (`pg`) |
 | Model | Gemma 4 26B-A4B IT (`gemma-4-26b-a4b-it`) through the Gemini API |
 | Tests | `node:test` with `tsx`, no test framework dependency |
 | Lint | ESLint 9 with `eslint-config-next` |
